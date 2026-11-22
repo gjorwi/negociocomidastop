@@ -62,13 +62,17 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
       setError("Indica un precio mayor que cero.");
       return;
     }
-    await onSave({
-      ...draft,
-      name: draft.name.trim(),
-      description: draft.description.trim(),
-      price: numericPrice.toFixed(2),
-      emoji: draft.emoji || "🍽️",
-    });
+    try {
+      await onSave({
+        ...draft,
+        name: draft.name.trim(),
+        description: draft.description.trim(),
+        price: numericPrice.toFixed(2),
+        emoji: draft.emoji || "🍽️",
+      });
+    } catch (saveError) {
+      setError(saveError.message || "No se pudo guardar el plato.");
+    }
   };
 
   return (

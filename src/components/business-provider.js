@@ -58,7 +58,7 @@ export function BusinessProvider({ children }) {
         await refresh();
       },
       updateProduct: async (id, changes) => {
-        await apiFetch(`/business/me/products/${id}`, {
+        const payload = await apiFetch(`/business/me/products/${id}`, {
           method: "PUT",
           body: JSON.stringify({
             ...changes,
@@ -66,13 +66,23 @@ export function BusinessProvider({ children }) {
             ...(changes.price !== undefined && { price: Number(changes.price) }),
           }),
         });
+        if (changes.image && !payload.product?.image) {
+          throw new Error(
+            "La API no guardó la imagen. Verifica que la API esté actualizada y vuelve a intentarlo.",
+          );
+        }
         await refresh();
       },
       addProduct: async (product) => {
-        await apiFetch("/business/me/products", {
+        const payload = await apiFetch("/business/me/products", {
           method: "POST",
           body: JSON.stringify(productPayload(product)),
         });
+        if (product.image && !payload.product?.image) {
+          throw new Error(
+            "La API no guardó la imagen. Verifica que la API esté actualizada y vuelve a intentarlo.",
+          );
+        }
         await refresh();
       },
       deleteProduct: async (id) => {
