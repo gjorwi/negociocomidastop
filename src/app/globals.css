@@ -1,0 +1,48 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #231c18;
+  --color-muted: #6b615a;
+  --color-accent: #c9410f;
+  --color-mustard: #f4b63f;
+  --color-beige: #f3ebe2;
+  --color-soft: #fbf6f1;
+  --color-line: #e7ded5;
+  --color-open: #2f7a3d;
+  --color-accent-tint: #fbe4da;
+  --color-amber-tint: #fff1d6;
+  --color-green-tint: #e9f3e8;
+  --font-sans: var(--font-figtree);
+  --font-display: var(--font-bricolage);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-soft font-sans text-ink antialiased;
+  }
+
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  ::selection {
+    @apply bg-amber-tint text-ink;
+  }
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
