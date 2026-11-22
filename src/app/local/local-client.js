@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { BadgeCheck, Check } from "lucide-react";
+import Image from "next/image";
+import { BadgeCheck, Camera, Check, X } from "lucide-react";
 import {
   Button,
   Field,
@@ -10,6 +11,7 @@ import {
   Toggle,
 } from "@/components/ui";
 import { useBusiness } from "@/components/business-provider";
+import { compressImage } from "@/lib/image";
 
 export default function BusinessProfileClient() {
   const { business, updateBusiness } = useBusiness();
@@ -34,10 +36,24 @@ export default function BusinessProfileClient() {
 function ProfileForm({ business, updateBusiness }) {
   const [draft, setDraft] = useState(() => ({ ...business }));
   const [saved, setSaved] = useState(false);
+  const [imageError, setImageError] = useState("");
 
   const updateDraft = (key, value) => {
     setSaved(false);
     setDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const onCoverChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setImageError("");
+    try {
+      const image = await compressImage(file);
+      updateDraft("coverImage", image);
+    } catch (error) {
+      setImageError(error.message);
+    }
   };
 
   const saveProfile = async (event) => {
@@ -95,6 +111,60 @@ function ProfileForm({ business, updateBusiness }) {
         <Pill tone="open">Sistema</Pill>
       </section>
 
+      <section className="mt-3 rounded-[24px] bg-white p-4 shadow-sm sm:p-5">
+        <h2 className="font-display text-xl tracking-[-0.03em] text-ink">
+          Foto de portada
+        </h2>
+        <p className="mt-1 text-xs leading-5 text-muted">
+          Es la imagen principal que ven los clientes al abrir tu ficha.
+        </p>
+        {draft.coverImage ? (
+          <div className="relative mt-3 h-48 overflow-hidden rounded-[20px] bg-accent-tint sm:h-60">
+            <Image
+              src={draft.coverImage}
+              alt={`Portada de ${draft.name}`}
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+            />
+            <button
+              type="button"
+              onClick={() => updateDraft("coverImage", "")}
+              aria-label="Quitar foto de portada"
+              className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink shadow-md"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <label className="mt-3 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-[20px] border border-dashed border-line bg-soft text-sm font-semibold text-muted transition hover:border-accent/50 hover:text-accent">
+            <Camera className="h-6 w-6" aria-hidden="true" />
+            Elegir foto de portada
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={onCoverChange}
+              className="sr-only"
+            />
+          </label>
+        )}
+        {draft.coverImage ? (
+          <label className="mt-3 inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-accent hover:underline">
+            Cambiar foto
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={onCoverChange}
+              className="sr-only"
+            />
+          </label>
+        ) : null}
+        {imageError ? (
+          <p className="mt-2 text-xs font-semibold text-accent">{imageError}</p>
+        ) : null}
+      </section>
+
       <form onSubmit={saveProfile} className="mt-6 max-w-3xl">
         <SectionTitle
           title="Información pública"
@@ -117,16 +187,34 @@ function ProfileForm({ business, updateBusiness }) {
             value={draft.address}
             onChange={(value) => updateDraft("address", value)}
           />
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-3">
             <Field
-              label="Zona"
-              value={draft.zone}
-              onChange={(value) => updateDraft("zone", value)}
+              label="Municipio"
+              value={draft.municipality || ""}
+              onChange={(value) => updateDraft("municipality", value)}
             />
             <Field
-              label="Categoría principal"
-              value={draft.categoryKey || draft.category}
-              onChange={(value) => updateDraft("categoryKey", value)}
+              label="Parroquia"
+              value={draft.parish || ""}
+              onChange={(value) => updateDraft("parish", value)}
+            />
+            <Field
+              label="Sector (opcional)"
+              value={draft.sector || ""}
+              onChange={(value) => updateDraft("sector", value)}
+            />
+          </div>
+          <div className="flex items-center justify-between gap-3 rounded-2xl bg-soft px-4 py-3">
+            <div>
+              <p className="text-sm font-semibold text-ink">¿Hace domicilio?</p>
+              <p className="mt-0.5 text-xs text-muted">
+                Se muestra en tu ficha pública.
+              </p>
+            </div>
+            <Toggle
+              checked={Boolean(draft.hasDelivery)}
+              onChange={(value) => updateDraft("hasDelivery", value)}
+              label="El negocio hace domicilio"
             />
           </div>
         </div>
@@ -181,7 +269,7 @@ function ProfileForm({ business, updateBusiness }) {
           ) : null}
         </div>
         <p className="mt-3 text-[11px] leading-5 text-muted">
-          Los cambios se publican en la ficha de tu establecimiento al guardar.
+          La portada y los cambios se publican en tu ficha al guardar.
         </p>
       </form>
     </div>

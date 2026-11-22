@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Plus, X } from "lucide-react";
 import {
   Button,
@@ -12,6 +13,7 @@ import {
   Toggle,
 } from "@/components/ui";
 import { useBusiness } from "@/components/business-provider";
+import { compressImage } from "@/lib/image";
 
 function emptyDraft() {
   return {
@@ -20,6 +22,7 @@ function emptyDraft() {
     price: "",
     categoryId: "hamburguesas",
     emoji: "🍔",
+    image: "",
     isAvailable: true,
     isActive: true,
   };
@@ -30,9 +33,23 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
     product ? { ...product } : emptyDraft(),
   );
   const [error, setError] = useState("");
+  const [imageError, setImageError] = useState("");
 
   const updateDraft = (key, value) =>
     setDraft((current) => ({ ...current, [key]: value }));
+
+  const onImageChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setImageError("");
+    try {
+      const image = await compressImage(file);
+      updateDraft("image", image);
+    } catch (imageLoadError) {
+      setImageError(imageLoadError.message);
+    }
+  };
 
   const submit = async (event) => {
     event.preventDefault();
@@ -112,6 +129,48 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
                 </option>
               ))}
             </Select>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-ink">Foto del plato</p>
+            <p className="mt-0.5 text-[11px] leading-4 text-muted">
+              Se optimiza antes de guardarse. Si no agregas foto, se usa el
+              emoji del plato.
+            </p>
+            {draft.image ? (
+              <div className="relative mt-2 h-40 overflow-hidden rounded-[20px] bg-amber-tint">
+                <Image
+                  src={draft.image}
+                  alt="Vista previa del plato"
+                  fill
+                  unoptimized
+                  sizes="(max-width: 640px) 100vw, 448px"
+                  className="object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => updateDraft("image", "")}
+                  aria-label="Quitar foto del plato"
+                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink shadow-md"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="mt-2 flex h-28 cursor-pointer flex-col items-center justify-center gap-1.5 rounded-[20px] border border-dashed border-line bg-soft text-sm font-semibold text-muted transition hover:border-accent/50 hover:text-accent">
+                <span className="text-xl">📷</span>
+                Elegir foto
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={onImageChange}
+                  className="sr-only"
+                />
+              </label>
+            )}
+            {imageError ? (
+              <p className="mt-2 text-xs font-semibold text-accent">{imageError}</p>
+            ) : null}
           </div>
 
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-soft px-4 py-3">

@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight, Star } from "lucide-react";
 import { formatScore, getAdjustedProductScore } from "@/lib/scoring";
@@ -163,8 +164,19 @@ export function ProductCard({ product, category, onEdit, onToggle }) {
   return (
     <article className="flex h-[248px] flex-col rounded-[24px] border border-line/70 bg-white/65 p-3 shadow-sm backdrop-blur-[2px]">
       <div className="flex items-start justify-between gap-2">
-        <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-tint text-[28px]">
-          {product.emoji || "🍽️"}
+        <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-amber-tint text-[28px]">
+          {product.image ? (
+            <Image
+              src={product.image}
+              alt=""
+              fill
+              unoptimized
+              sizes="48px"
+              className="object-cover"
+            />
+          ) : (
+            product.emoji || "🍽️"
+          )}
         </span>
         <button
           type="button"

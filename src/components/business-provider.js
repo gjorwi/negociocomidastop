@@ -23,6 +23,7 @@ function productPayload(product) {
     price: Number(product.price),
     categoryKey: product.categoryKey || product.categoryId,
     emoji: product.emoji,
+    image: product.image || '',
     isAvailable: product.isAvailable,
     isActive: product.isActive,
   };
