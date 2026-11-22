@@ -17,6 +17,9 @@ Panel de negocios en Next.js, JavaScript y Tailwind CSS, conectado exclusivament
 
 1. API funcionando con MongoDB Atlas (`api/`, `npm run dev`).
 2. Una solicitud de negocio aprobada desde `admin-web` (**Solicitudes**). La aprobación crea la cuenta del negocio y muestra su contraseña temporal una sola vez.
+3. `API_URL` apuntando a la URL base del API, incluyendo `/api`.
+
+En Vercel configura `API_URL` como variable de entorno (sin prefijo `NEXT_PUBLIC_`) y vuelve a desplegar. Next.js la usa en un rewrite del servidor; el navegador solo llama al mismo dominio del panel mediante `/api`.
 
 ## Ejecutar
 
