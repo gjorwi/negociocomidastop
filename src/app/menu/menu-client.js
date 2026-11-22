@@ -55,10 +55,10 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-ink/50 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-sm">
       <form
         onSubmit={submit}
-        className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white p-5 shadow-2xl sm:p-6"
+        className="max-h-[85dvh] w-full max-w-lg overflow-y-auto rounded-[28px] bg-white p-5 shadow-2xl sm:max-h-[92dvh] sm:p-6"
       >
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -153,7 +153,7 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
           ) : null}
         </div>
 
-        <div className="mt-5 flex gap-2">
+        <div className="sticky -bottom-5 z-10 -mx-5 mt-5 flex gap-2 border-t border-line bg-white px-5 py-3 sm:-bottom-6 sm:-mx-6 sm:px-6">
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancelar
           </Button>
