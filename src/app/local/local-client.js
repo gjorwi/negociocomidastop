@@ -58,7 +58,26 @@ function ProfileForm({ business, updateBusiness }) {
 
   const saveProfile = async (event) => {
     event.preventDefault();
-    await updateBusiness(draft);
+    const deliveryEnabled = Boolean(draft.hasDelivery);
+    const toOptionalNumber = (value) => {
+      if (value === "" || value === null || value === undefined) return null;
+      const numeric = Number(value);
+      return Number.isFinite(numeric) ? numeric : null;
+    };
+
+    await updateBusiness({
+      ...draft,
+      hasDelivery: deliveryEnabled,
+      deliveryShortFee: deliveryEnabled
+        ? toOptionalNumber(draft.deliveryShortFee)
+        : null,
+      deliveryLongFee: deliveryEnabled
+        ? toOptionalNumber(draft.deliveryLongFee)
+        : null,
+      freeDeliveryFrom: deliveryEnabled
+        ? toOptionalNumber(draft.freeDeliveryFrom)
+        : null,
+    });
     setSaved(true);
   };
 
@@ -187,6 +206,13 @@ function ProfileForm({ business, updateBusiness }) {
             value={draft.address}
             onChange={(value) => updateDraft("address", value)}
           />
+          <Field
+            label="Referencia de ubicación"
+            value={draft.locationReference || ""}
+            onChange={(value) => updateDraft("locationReference", value)}
+            placeholder="Ej. Frente a la plaza, al lado de la panadería"
+            helper="Opcional. Ayuda a tus clientes a llegar y a validar el escaneo del QR."
+          />
           <div className="grid gap-4 sm:grid-cols-3">
             <Field
               label="Municipio"
@@ -206,7 +232,9 @@ function ProfileForm({ business, updateBusiness }) {
           </div>
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-soft px-4 py-3">
             <div>
-              <p className="text-sm font-semibold text-ink">¿Hace domicilio?</p>
+              <p className="text-sm font-semibold text-ink">
+                ¿Ofrece servicio de delivery?
+              </p>
               <p className="mt-0.5 text-xs text-muted">
                 Se muestra en tu ficha pública.
               </p>
@@ -214,9 +242,63 @@ function ProfileForm({ business, updateBusiness }) {
             <Toggle
               checked={Boolean(draft.hasDelivery)}
               onChange={(value) => updateDraft("hasDelivery", value)}
-              label="El negocio hace domicilio"
+              label="El negocio ofrece servicio de delivery"
             />
           </div>
+          {draft.hasDelivery ? (
+            <div className="space-y-4 rounded-2xl bg-soft p-4">
+              <div>
+                <p className="text-sm font-semibold text-ink">
+                  Tarifas de delivery
+                </p>
+                <p className="mt-0.5 text-xs text-muted">
+                  Se muestran en tu ficha pública para que el cliente conozca el
+                  costo antes de pedir.
+                </p>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Delivery corto (USD)"
+                  type="number"
+                  value={
+                    draft.deliveryShortFee === null ||
+                    draft.deliveryShortFee === undefined
+                      ? ""
+                      : String(draft.deliveryShortFee)
+                  }
+                  onChange={(value) => updateDraft("deliveryShortFee", value)}
+                  placeholder="Ej. 1.50"
+                  helper="Opcional. Zonas cercanas."
+                />
+                <Field
+                  label="Delivery largo (USD)"
+                  type="number"
+                  value={
+                    draft.deliveryLongFee === null ||
+                    draft.deliveryLongFee === undefined
+                      ? ""
+                      : String(draft.deliveryLongFee)
+                  }
+                  onChange={(value) => updateDraft("deliveryLongFee", value)}
+                  placeholder="Ej. 3.00"
+                  helper="Opcional. Zonas más lejanas."
+                />
+              </div>
+              <Field
+                label="Delivery gratis a partir de (USD)"
+                type="number"
+                value={
+                  draft.freeDeliveryFrom === null ||
+                  draft.freeDeliveryFrom === undefined
+                    ? ""
+                    : String(draft.freeDeliveryFrom)
+                }
+                onChange={(value) => updateDraft("freeDeliveryFrom", value)}
+                placeholder="Ej. 15.00"
+                helper="Opcional. Déjalo vacío si no aplica."
+              />
+            </div>
+          ) : null}
         </div>
 
         <SectionTitle title="Contacto y horario" />

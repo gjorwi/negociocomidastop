@@ -162,7 +162,7 @@ export function Select({ label, value, onChange, children }) {
 
 export function ProductCard({ product, category, onEdit, onToggle }) {
   return (
-    <article className="flex h-[248px] flex-col rounded-[24px] border border-line/70 bg-white/65 p-3 shadow-sm backdrop-blur-[2px]">
+    <article className="flex self-start flex-col rounded-[24px] border border-line/70 bg-white/65 p-3 shadow-sm backdrop-blur-[2px]">
       <div className="flex items-start justify-between gap-2">
         <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-amber-tint text-[28px]">
           {product.image ? (
@@ -206,7 +206,7 @@ export function ProductCard({ product, category, onEdit, onToggle }) {
           <Pill tone="amber">Muestra pequeña</Pill>
         ) : null}
       </div>
-      <div className="mt-auto flex items-center justify-between gap-2 border-t border-line pt-2.5">
+      <div className="mt-2 flex items-center justify-between gap-2 border-t border-line pt-2.5">
         <span className="text-[11px] font-semibold text-ink">
           {product.isAvailable ? "Disponible hoy" : "Agotado por hoy"}
         </span>
