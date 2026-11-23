@@ -8,7 +8,8 @@ Panel de negocios en Next.js, JavaScript y Tailwind CSS, conectado exclusivament
 - Resumen de puntuación calculada, cobertura del menú y platos mejor puntuados.
 - Estado abierto/cerrado.
 - Administración de productos: crear, editar, ocultar y cambiar disponibilidad.
-- Edición de datos públicos, dirección, contacto y horario.
+- Edición de datos públicos, dirección, referencia, contacto y horario.
+- Actualización de la ubicación del local con mapa, marcador y geocodificación de la dirección.
 - Puntuaciones y reconocimiento en modo de solo lectura.
 - Sesión persistida con token en `localStorage`.
 - Sin datos de demostración: todo proviene de la API.

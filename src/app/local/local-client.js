@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { BadgeCheck, Camera, Check, X } from "lucide-react";
+import { BadgeCheck, Camera, Check, LocateFixed, X } from "lucide-react";
 import {
   Button,
   Field,
@@ -10,8 +10,10 @@ import {
   SectionTitle,
   Toggle,
 } from "@/components/ui";
+import { LocationPicker } from "@/components/location-picker";
 import { useBusiness } from "@/components/business-provider";
 import { compressImage } from "@/lib/image";
+import { reverseGeocode } from "@/lib/geo";
 
 export default function BusinessProfileClient() {
   const { business, updateBusiness } = useBusiness();
@@ -37,10 +39,53 @@ function ProfileForm({ business, updateBusiness }) {
   const [draft, setDraft] = useState(() => ({ ...business }));
   const [saved, setSaved] = useState(false);
   const [imageError, setImageError] = useState("");
+  const [locationError, setLocationError] = useState("");
+  const [locating, setLocating] = useState(false);
+  const [addressLoading, setAddressLoading] = useState(false);
 
   const updateDraft = (key, value) => {
     setSaved(false);
     setDraft((current) => ({ ...current, [key]: value }));
+  };
+
+  const applyLocation = (point) => {
+    setLocationError("");
+    updateDraft("location", point);
+    setAddressLoading(true);
+    reverseGeocode(point)
+      .then((address) => {
+        if (address) updateDraft("address", address);
+      })
+      .catch(() => {})
+      .finally(() => setAddressLoading(false));
+  };
+
+  const useCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError(
+        "Tu navegador no permite obtener la ubicación. Márcala en el mapa.",
+      );
+      return;
+    }
+
+    setLocationError("");
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocating(false);
+        applyLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        setLocating(false);
+        setLocationError(
+          "No pudimos obtener tu ubicación. Revisa los permisos del navegador o márcala en el mapa.",
+        );
+      },
+      { enableHighAccuracy: true, timeout: 15000 },
+    );
   };
 
   const onCoverChange = async (event) => {
@@ -80,6 +125,12 @@ function ProfileForm({ business, updateBusiness }) {
     });
     setSaved(true);
   };
+
+  const hasLocation =
+    typeof draft.location?.lat === "number" &&
+    Number.isFinite(draft.location.lat) &&
+    typeof draft.location?.lng === "number" &&
+    Number.isFinite(draft.location.lng);
 
   return (
     <div>
@@ -201,36 +252,6 @@ function ProfileForm({ business, updateBusiness }) {
             onChange={(value) => updateDraft("description", value)}
             multiline
           />
-          <Field
-            label="Dirección"
-            value={draft.address}
-            onChange={(value) => updateDraft("address", value)}
-          />
-          <Field
-            label="Referencia de ubicación"
-            value={draft.locationReference || ""}
-            onChange={(value) => updateDraft("locationReference", value)}
-            placeholder="Ej. Cerca del estadio municipal, al lado de la policía"
-            helper="Opcional. Describe puntos de referencia para que tus clientes lleguen más fácil."
-            multiline
-          />
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Field
-              label="Municipio"
-              value={draft.municipality || ""}
-              onChange={(value) => updateDraft("municipality", value)}
-            />
-            <Field
-              label="Parroquia"
-              value={draft.parish || ""}
-              onChange={(value) => updateDraft("parish", value)}
-            />
-            <Field
-              label="Sector (opcional)"
-              value={draft.sector || ""}
-              onChange={(value) => updateDraft("sector", value)}
-            />
-          </div>
           <div className="flex items-center justify-between gap-3 rounded-2xl bg-soft px-4 py-3">
             <div>
               <p className="text-sm font-semibold text-ink">
@@ -300,6 +321,84 @@ function ProfileForm({ business, updateBusiness }) {
               />
             </div>
           ) : null}
+        </div>
+
+        <SectionTitle
+          title="Ubicación"
+          description="Marca el punto exacto del local para la ficha pública y la validación del QR."
+        />
+        <div className="space-y-4 rounded-[24px] bg-white p-4 shadow-sm sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={useCurrentLocation}
+              disabled={locating}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-beige px-4 text-sm font-semibold text-ink transition hover:bg-[#ebe0d4] disabled:opacity-60"
+            >
+              <LocateFixed className="h-4 w-4 text-accent" aria-hidden="true" />
+              {locating ? "Obteniendo ubicación…" : "Usar mi ubicación actual"}
+            </button>
+            <p className="text-[11px] leading-4 text-muted">
+              Toca el mapa o arrastra el marcador para ajustar la ubicación.
+            </p>
+          </div>
+
+          <LocationPicker
+            value={hasLocation ? draft.location : null}
+            onChange={applyLocation}
+          />
+
+          {hasLocation ? (
+            <p className="text-[11px] font-semibold text-open">
+              Ubicación marcada: {draft.location.lat.toFixed(5)},{" "}
+              {draft.location.lng.toFixed(5)}
+            </p>
+          ) : (
+            <p className="rounded-2xl bg-amber-tint p-3 text-[11px] font-semibold leading-4 text-[#6a4700]">
+              Aún no hay una ubicación marcada. Sin ella, los clientes no podrán
+              validar el escaneo del QR.
+            </p>
+          )}
+
+          {locationError ? (
+            <p className="text-xs font-semibold text-accent">{locationError}</p>
+          ) : null}
+
+          <Field
+            label="Dirección"
+            value={draft.address}
+            onChange={(value) => updateDraft("address", value)}
+            helper={
+              addressLoading
+                ? "Buscando la dirección del punto marcado…"
+                : "Se completa desde el mapa. Puedes editarla."
+            }
+          />
+          <Field
+            label="Referencia de ubicación"
+            value={draft.locationReference || ""}
+            onChange={(value) => updateDraft("locationReference", value)}
+            placeholder="Ej. Cerca del estadio municipal, al lado de la policía"
+            helper="Opcional. Describe puntos de referencia para que tus clientes lleguen más fácil."
+            multiline
+          />
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field
+              label="Municipio"
+              value={draft.municipality || ""}
+              onChange={(value) => updateDraft("municipality", value)}
+            />
+            <Field
+              label="Parroquia"
+              value={draft.parish || ""}
+              onChange={(value) => updateDraft("parish", value)}
+            />
+            <Field
+              label="Sector (opcional)"
+              value={draft.sector || ""}
+              onChange={(value) => updateDraft("sector", value)}
+            />
+          </div>
         </div>
 
         <SectionTitle title="Contacto y horario" />
