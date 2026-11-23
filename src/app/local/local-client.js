@@ -210,8 +210,9 @@ function ProfileForm({ business, updateBusiness }) {
             label="Referencia de ubicación"
             value={draft.locationReference || ""}
             onChange={(value) => updateDraft("locationReference", value)}
-            placeholder="Ej. Frente a la plaza, al lado de la panadería"
-            helper="Opcional. Ayuda a tus clientes a llegar y a validar el escaneo del QR."
+            placeholder="Ej. Cerca del estadio municipal, al lado de la policía"
+            helper="Opcional. Describe puntos de referencia para que tus clientes lleguen más fácil."
+            multiline
           />
           <div className="grid gap-4 sm:grid-cols-3">
             <Field
