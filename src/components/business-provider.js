@@ -21,6 +21,7 @@ function productPayload(product) {
     name: product.name,
     description: product.description,
     price: Number(product.price),
+    prices: product.prices,
     categoryKey: product.categoryKey || product.categoryId,
     emoji: product.emoji,
     image: product.image || '',
@@ -44,6 +45,7 @@ export function BusinessProvider({ children }) {
       business: data?.business || null,
       products: data?.products || [],
       categories: data?.categories || [],
+      limits: data?.limits || { maxProducts: 5 },
       metrics: data?.metrics
         ? { ...data.metrics, categoryScores: data.metrics.categories || [] }
         : emptyMetrics,
@@ -64,6 +66,7 @@ export function BusinessProvider({ children }) {
             ...changes,
             ...(changes.categoryId && { categoryKey: changes.categoryId }),
             ...(changes.price !== undefined && { price: Number(changes.price) }),
+            ...(changes.prices !== undefined && { prices: changes.prices }),
           }),
         });
         if (changes.image && !payload.product?.image) {

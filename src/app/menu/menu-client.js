@@ -19,7 +19,10 @@ function emptyDraft() {
   return {
     name: "",
     description: "",
-    price: "",
+    priceUnique: "",
+    priceSmall: "",
+    priceMedium: "",
+    priceLarge: "",
     categoryId: "hamburguesas",
     emoji: "🍔",
     image: "",
@@ -28,9 +31,49 @@ function emptyDraft() {
   };
 }
 
+function priceInputValue(value) {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? String(value)
+    : "";
+}
+
+function productToDraft(product) {
+  const source = product?.prices || {};
+  const hasStoredPrices = ["unique", "small", "medium", "large"].some(
+    (key) => Number(source[key]) > 0,
+  );
+  const prices = hasStoredPrices ? source : { unique: product?.price };
+
+  return {
+    ...emptyDraft(),
+    name: product?.name || "",
+    description: product?.description || "",
+    priceUnique: priceInputValue(Number(prices.unique)),
+    priceSmall: priceInputValue(Number(prices.small)),
+    priceMedium: priceInputValue(Number(prices.medium)),
+    priceLarge: priceInputValue(Number(prices.large)),
+    categoryId: product?.categoryId || "hamburguesas",
+    emoji: product?.emoji || "🍔",
+    image: product?.image || "",
+    isAvailable: product?.isAvailable !== false,
+    isActive: product?.isActive !== false,
+  };
+}
+
+function parsePriceField(value) {
+  const text = String(value ?? "").replace(",", ".").trim();
+  if (!text) return { value: null };
+
+  const amount = Number(text);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return { error: "Cada precio indicado debe ser un número mayor que cero." };
+  }
+  return { value: amount };
+}
+
 function ProductModal({ mode, product, categories, onClose, onSave }) {
   const [draft, setDraft] = useState(() =>
-    product ? { ...product } : emptyDraft(),
+    product ? productToDraft(product) : emptyDraft(),
   );
   const [error, setError] = useState("");
   const [imageError, setImageError] = useState("");
@@ -57,18 +100,51 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
       setError("Escribe el nombre del plato.");
       return;
     }
-    const numericPrice = Number(String(draft.price).replace(",", ".").trim());
-    if (!Number.isFinite(numericPrice) || numericPrice <= 0) {
-      setError("Indica un precio mayor que cero.");
+
+    const fields = {
+      unique: parsePriceField(draft.priceUnique),
+      small: parsePriceField(draft.priceSmall),
+      medium: parsePriceField(draft.priceMedium),
+      large: parsePriceField(draft.priceLarge),
+    };
+    const invalidField = Object.values(fields).find((field) => field.error);
+    if (invalidField) {
+      setError(invalidField.error);
       return;
     }
+
+    const prices = {
+      unique: fields.unique.value,
+      small: fields.small.value,
+      medium: fields.medium.value,
+      large: fields.large.value,
+    };
+    const hasSizes = [prices.small, prices.medium, prices.large].some(
+      (value) => value !== null,
+    );
+    if (prices.unique !== null && hasSizes) {
+      setError("Usa el tamaño único o los precios por tamaño (P/M/G), no ambos.");
+      return;
+    }
+    if (prices.unique === null && !hasSizes) {
+      setError("Indica al menos un precio para el plato.");
+      return;
+    }
+    const basePrice = Math.min(
+      ...Object.values(prices).filter((value) => value !== null),
+    );
+
     try {
       await onSave({
-        ...draft,
         name: draft.name.trim(),
         description: draft.description.trim(),
-        price: numericPrice.toFixed(2),
+        categoryId: draft.categoryId,
         emoji: draft.emoji || "🍽️",
+        image: draft.image,
+        isAvailable: draft.isAvailable,
+        isActive: draft.isActive,
+        prices,
+        price: basePrice,
       });
     } catch (saveError) {
       setError(saveError.message || "No se pudo guardar el plato.");
@@ -114,26 +190,55 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
             placeholder="Ingredientes o preparación"
             multiline
           />
-          <div className="grid grid-cols-2 gap-3">
-            <Field
-              label="Precio (USD)"
-              value={String(draft.price)}
-              onChange={(value) => updateDraft("price", value)}
-              placeholder="0.00"
-              type="number"
-            />
-            <Select
-              label="Categoría"
-              value={draft.categoryId}
-              onChange={(value) => updateDraft("categoryId", value)}
-            >
-              {categories.map((category) => (
-                <option key={category.id} value={category.id}>
-                  {category.label}
-                </option>
-              ))}
-            </Select>
+          <div>
+            <p className="text-sm font-semibold text-ink">Precios (USD)</p>
+            <p className="mt-0.5 text-[11px] leading-4 text-muted">
+              Usa el tamaño único (ej. arepa) o los precios por tamaño
+              (P/M/G). Solo se muestran los tamaños que tengan valor.
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-3">
+              <Field
+                label="Tamaño único"
+                value={draft.priceUnique}
+                onChange={(value) => updateDraft("priceUnique", value)}
+                placeholder="0.00"
+                type="number"
+              />
+              <Field
+                label="Pequeño (P)"
+                value={draft.priceSmall}
+                onChange={(value) => updateDraft("priceSmall", value)}
+                placeholder="0.00"
+                type="number"
+              />
+              <Field
+                label="Mediano (M)"
+                value={draft.priceMedium}
+                onChange={(value) => updateDraft("priceMedium", value)}
+                placeholder="0.00"
+                type="number"
+              />
+              <Field
+                label="Grande (G)"
+                value={draft.priceLarge}
+                onChange={(value) => updateDraft("priceLarge", value)}
+                placeholder="0.00"
+                type="number"
+              />
+            </div>
           </div>
+
+          <Select
+            label="Categoría"
+            value={draft.categoryId}
+            onChange={(value) => updateDraft("categoryId", value)}
+          >
+            {categories.map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.label}
+              </option>
+            ))}
+          </Select>
 
           <div>
             <p className="text-sm font-semibold text-ink">Foto del plato</p>
@@ -230,8 +335,15 @@ function ProductModal({ mode, product, categories, onClose, onSave }) {
 }
 
 export default function MenuClient() {
-  const { business, products, categories, updateProduct, addProduct } =
-    useBusiness();
+  const {
+    business,
+    products,
+    categories,
+    limits,
+    updateProduct,
+    addProduct,
+    deleteProduct,
+  } = useBusiness();
   const [categoryId, setCategoryId] = useState("todos");
   const [modal, setModal] = useState(null);
 
@@ -253,6 +365,8 @@ export default function MenuClient() {
   const availableCount = products.filter(
     (product) => product.isActive && product.isAvailable,
   ).length;
+  const maxProducts = limits?.maxProducts ?? 5;
+  const limitReached = activeCount >= maxProducts;
 
   const saveProduct = async (draft) => {
     if (modal?.mode === "edit") {
@@ -288,12 +402,28 @@ export default function MenuClient() {
         <Button
           type="button"
           onClick={() => setModal({ mode: "new", product: null })}
+          disabled={limitReached}
+          title={
+            limitReached
+              ? `Límite de ${maxProducts} platos activos alcanzado`
+              : "Agregar un plato"
+          }
           className="ml-auto"
         >
           <Plus className="h-4 w-4" />
           Plato
         </Button>
       </section>
+
+      <p
+        className={`mt-2 text-xs leading-5 ${
+          limitReached ? "font-semibold text-accent" : "text-muted"
+        }`}
+      >
+        {limitReached
+          ? `Llegaste al límite de ${maxProducts} platos activos. Oculta uno para agregar otro; el plato nuevo empezará sin puntuación.`
+          : `Puedes tener hasta ${maxProducts} platos activos. Al llegar al límite, oculta uno para agregar otro; el nuevo empezará sin puntuación.`}
+      </p>
 
       <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1">
         <button
@@ -342,6 +472,22 @@ export default function MenuClient() {
               onToggle={(id, value) =>
                 updateProduct(id, { isAvailable: value })
               }
+              onRemove={async () => {
+                if (
+                  !window.confirm(
+                    `¿Quitar "${product.name}" del menú? Dejará de participar en el ranking y se liberará un cupo.`,
+                  )
+                ) {
+                  return;
+                }
+                try {
+                  await deleteProduct(product.id);
+                } catch (removeError) {
+                  window.alert(
+                    removeError.message || "No se pudo quitar el plato.",
+                  );
+                }
+              }}
             />
           ))}
         </div>
