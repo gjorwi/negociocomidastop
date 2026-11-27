@@ -3,12 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { LayoutDashboard, LogOut, QrCode, Store, UtensilsCrossed } from "lucide-react";
+import {
+  Gift,
+  LayoutDashboard,
+  LogOut,
+  QrCode,
+  Store,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 
 const navigation = [
   { href: "/", label: "Resumen", icon: LayoutDashboard },
   { href: "/menu", label: "Menú", icon: UtensilsCrossed },
+  { href: "/cupones", label: "Cupones", icon: Gift },
   { href: "/qr", label: "QR", icon: QrCode },
   { href: "/local", label: "Mi local", icon: Store },
 ];
