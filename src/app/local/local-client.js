@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { BadgeCheck, Camera, Check, LocateFixed, X } from "lucide-react";
 import {
@@ -37,15 +37,35 @@ export default function BusinessProfileClient() {
 
 function ProfileForm({ business, updateBusiness }) {
   const [draft, setDraft] = useState(() => ({ ...business }));
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    JSON.stringify(business),
+  );
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [imageError, setImageError] = useState("");
   const [logoError, setLogoError] = useState("");
   const [locationError, setLocationError] = useState("");
   const [locating, setLocating] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
 
+  const dirty = useMemo(
+    () => JSON.stringify(draft) !== savedSnapshot,
+    [draft, savedSnapshot],
+  );
+
+  useEffect(() => {
+    if (!dirty) return undefined;
+    const warnBeforeLeaving = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", warnBeforeLeaving);
+    return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+  }, [dirty]);
+
   const updateDraft = (key, value) => {
     setSaved(false);
+    setSaveError("");
     setDraft((current) => ({ ...current, [key]: value }));
   };
 
@@ -115,8 +135,7 @@ function ProfileForm({ business, updateBusiness }) {
     }
   };
 
-  const saveProfile = async (event) => {
-    event.preventDefault();
+  const persist = async () => {
     const deliveryEnabled = Boolean(draft.hasDelivery);
     const toOptionalNumber = (value) => {
       if (value === "" || value === null || value === undefined) return null;
@@ -124,20 +143,44 @@ function ProfileForm({ business, updateBusiness }) {
       return Number.isFinite(numeric) ? numeric : null;
     };
 
-    await updateBusiness({
-      ...draft,
-      hasDelivery: deliveryEnabled,
-      deliveryShortFee: deliveryEnabled
-        ? toOptionalNumber(draft.deliveryShortFee)
-        : null,
-      deliveryLongFee: deliveryEnabled
-        ? toOptionalNumber(draft.deliveryLongFee)
-        : null,
-      freeDeliveryFrom: deliveryEnabled
-        ? toOptionalNumber(draft.freeDeliveryFrom)
-        : null,
+    try {
+      await updateBusiness({
+        ...draft,
+        hasDelivery: deliveryEnabled,
+        deliveryShortFee: deliveryEnabled
+          ? toOptionalNumber(draft.deliveryShortFee)
+          : null,
+        deliveryLongFee: deliveryEnabled
+          ? toOptionalNumber(draft.deliveryLongFee)
+          : null,
+        freeDeliveryFrom: deliveryEnabled
+          ? toOptionalNumber(draft.freeDeliveryFrom)
+          : null,
+      });
+      setSavedSnapshot(JSON.stringify(draft));
+      setSaved(true);
+      setSaveError("");
+    } catch (error) {
+      setSaved(false);
+      setSaveError(
+        error.message || "No pudimos guardar los cambios. Intenta de nuevo.",
+      );
+    }
+  };
+
+  const saveProfile = async (event) => {
+    event.preventDefault();
+    await persist();
+  };
+
+  const changeOpenStatus = async (isOpen) => {
+    await updateBusiness({ isOpen });
+    setDraft((current) => ({ ...current, isOpen }));
+    setSavedSnapshot((current) => {
+      const baseline = JSON.parse(current);
+      baseline.isOpen = isOpen;
+      return JSON.stringify(baseline);
     });
-    setSaved(true);
   };
 
   const hasLocation =
@@ -151,9 +194,12 @@ function ProfileForm({ business, updateBusiness }) {
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
         Perfil público
       </p>
-      <h1 className="mt-2 font-display text-[38px] leading-none tracking-[-0.045em] text-ink">
-        Mi local
-      </h1>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <h1 className="font-display text-[38px] leading-none tracking-[-0.045em] text-ink">
+          Mi local
+        </h1>
+        {dirty ? <Pill tone="amber">Cambios sin guardar</Pill> : null}
+      </div>
       <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
         Mantén al día los datos que ayudan a tus clientes a encontrarte.
       </p>
@@ -171,10 +217,7 @@ function ProfileForm({ business, updateBusiness }) {
         </div>
         <Toggle
           checked={business.isOpen}
-          onChange={async (isOpen) => {
-            await updateBusiness({ isOpen });
-            setDraft((current) => ({ ...current, isOpen }));
-          }}
+          onChange={changeOpenStatus}
           label="Estado abierto del establecimiento"
         />
       </section>
@@ -520,10 +563,32 @@ function ProfileForm({ business, updateBusiness }) {
             </span>
           ) : null}
         </div>
+        {saveError ? (
+          <p className="mt-2 text-xs font-semibold text-accent">{saveError}</p>
+        ) : null}
         <p className="mt-3 text-[11px] leading-5 text-muted">
           La portada, el logo y los cambios se publican en tu ficha al guardar.
         </p>
       </form>
+
+      {dirty ? (
+        <div
+          role="status"
+          className="fixed inset-x-4 bottom-4 z-50 rounded-[20px] bg-ink p-3 text-white shadow-xl sm:left-auto sm:right-6 sm:w-[340px]"
+        >
+          <p className="text-xs font-semibold">Tienes cambios sin guardar</p>
+          <p className="mt-0.5 text-[11px] leading-4 text-white/70">
+            Guárdalos para que se publiquen en la ficha del negocio.
+          </p>
+          <button
+            type="button"
+            onClick={persist}
+            className="mt-2 inline-flex min-h-10 w-full items-center justify-center rounded-full bg-white px-4 text-xs font-semibold text-ink transition hover:bg-white/90"
+          >
+            Guardar cambios
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
