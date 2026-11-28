@@ -574,7 +574,7 @@ function ProfileForm({ business, updateBusiness }) {
       {dirty ? (
         <div
           role="status"
-          className="fixed inset-x-4 bottom-4 z-50 rounded-[20px] bg-ink p-3 text-white shadow-xl sm:left-auto sm:right-6 sm:w-[340px]"
+          className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-40 rounded-[20px] bg-ink p-3 text-white shadow-xl md:bottom-6 md:left-auto md:right-6 md:w-[340px]"
         >
           <p className="text-xs font-semibold">Tienes cambios sin guardar</p>
           <p className="mt-0.5 text-[11px] leading-4 text-white/70">
