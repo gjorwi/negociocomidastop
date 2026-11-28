@@ -39,6 +39,7 @@ function ProfileForm({ business, updateBusiness }) {
   const [draft, setDraft] = useState(() => ({ ...business }));
   const [saved, setSaved] = useState(false);
   const [imageError, setImageError] = useState("");
+  const [logoError, setLogoError] = useState("");
   const [locationError, setLocationError] = useState("");
   const [locating, setLocating] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
@@ -98,6 +99,19 @@ function ProfileForm({ business, updateBusiness }) {
       updateDraft("coverImage", image);
     } catch (error) {
       setImageError(error.message);
+    }
+  };
+
+  const onLogoChange = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setLogoError("");
+    try {
+      const image = await compressImage(file);
+      updateDraft("logoImage", image);
+    } catch (error) {
+      setLogoError(error.message);
     }
   };
 
@@ -232,6 +246,62 @@ function ProfileForm({ business, updateBusiness }) {
         ) : null}
         {imageError ? (
           <p className="mt-2 text-xs font-semibold text-accent">{imageError}</p>
+        ) : null}
+      </section>
+
+      <section className="mt-3 rounded-[24px] bg-white p-4 shadow-sm sm:p-5">
+        <h2 className="font-display text-xl tracking-[-0.03em] text-ink">
+          Logo del negocio
+        </h2>
+        <p className="mt-1 text-xs leading-5 text-muted">
+          Se muestra en un círculo sobre tu portada y en las promociones
+          destacadas. Usa una imagen cuadrada.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          {draft.logoImage ? (
+            <div className="h-24 w-24 shrink-0 overflow-hidden rounded-full bg-accent-tint ring-4 ring-beige">
+              <Image
+                src={draft.logoImage}
+                alt={`Logo de ${draft.name}`}
+                width={96}
+                height={96}
+                unoptimized
+                className="h-full w-full object-cover"
+              />
+            </div>
+          ) : (
+            <span className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-accent-tint text-[40px] ring-4 ring-beige">
+              {draft.emoji || "🍽️"}
+            </span>
+          )}
+          <div className="flex flex-col items-start gap-2">
+            <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full bg-beige px-4 text-xs font-semibold text-ink transition hover:bg-[#ebe0d4]">
+              <Camera className="h-4 w-4 text-accent" aria-hidden="true" />
+              {draft.logoImage ? "Cambiar logo" : "Subir logo"}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={onLogoChange}
+                className="sr-only"
+              />
+            </label>
+            {draft.logoImage ? (
+              <button
+                type="button"
+                onClick={() => updateDraft("logoImage", "")}
+                className="text-xs font-semibold text-accent hover:underline"
+              >
+                Quitar logo
+              </button>
+            ) : (
+              <p className="text-[11px] leading-4 text-muted">
+                JPG, PNG o WebP. Se recorta en círculo.
+              </p>
+            )}
+          </div>
+        </div>
+        {logoError ? (
+          <p className="mt-2 text-xs font-semibold text-accent">{logoError}</p>
         ) : null}
       </section>
 
@@ -451,7 +521,7 @@ function ProfileForm({ business, updateBusiness }) {
           ) : null}
         </div>
         <p className="mt-3 text-[11px] leading-5 text-muted">
-          La portada y los cambios se publican en tu ficha al guardar.
+          La portada, el logo y los cambios se publican en tu ficha al guardar.
         </p>
       </form>
     </div>
