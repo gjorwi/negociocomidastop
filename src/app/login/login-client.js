@@ -40,12 +40,12 @@ export default function LoginClient() {
         <div className="mb-5 text-center">
           <div className="flex items-center justify-center gap-2.5 font-display text-[30px] leading-none tracking-[-0.055em]">
             <Image
-              src="/logo.jpg"
+              src="/logoreal.jpeg"
               alt=""
               width={48}
               height={48}
               priority
-              className="h-12 w-12 rounded-full object-contain"
+              className="h-[60px] w-[60px] rounded-full object-contain"
             />
             <span>
               <span className="text-ink">comidas</span>
